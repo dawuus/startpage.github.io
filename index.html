@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Start Page</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%234284d6'/%3E%3C/svg%3E">
+<meta name="color-scheme" content="dark">
 <style>
   :root{
     --panel-bg: rgba(20, 20, 25, 0.35);
@@ -26,6 +27,7 @@
     padding:0;
     height:100%;
     width:100%;
+    background: #1a1a2e;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
@@ -67,6 +69,13 @@
     margin-top: 30vh;
   }
 
+  .clock-group{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+  }
+
   .clock{
     font-size: 44px;
     font-weight: 300;
@@ -76,12 +85,21 @@
     user-select:none;
   }
 
+  .date-display{
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+    letter-spacing: 0.3px;
+    user-select:none;
+  }
+
   .clock.clock-size-small{ font-size: 44px; }
   .clock.clock-size-medium{ font-size: 68px; }
   .clock.clock-size-large{ font-size: 100px; }
   .clock.clock-bold{ font-weight: 700; }
 
-  .clock.clock-pos-top{
+  .clock-group.clock-pos-top{
     position:fixed;
     top: 34px;
     left:50%;
@@ -90,7 +108,7 @@
     margin-top:0;
   }
 
-  .clock.clock-pos-bottom{
+  .clock-group.clock-pos-bottom{
     position:fixed;
     bottom: 34px;
     left:50%;
@@ -633,6 +651,16 @@
     color: var(--text);
   }
 
+  .se-color-input{
+    width:44px;
+    height:30px;
+    border-radius:8px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background:none;
+    padding:2px;
+    cursor:pointer;
+  }
+
   .se-switch{
     width:38px;
     height:22px;
@@ -719,7 +747,7 @@
   .shortcuts-grid.density-large .label{ font-size:13.5px; max-width:100px; }
   .shortcuts-grid.density-large .add-shortcut .tile{ font-size:32px; }
 
-  #clock.hidden-el, .weather-widget.hidden-el{
+  #clockGroup.hidden-el, .weather-widget.hidden-el{
     display:none !important;
   }
 
@@ -1262,9 +1290,10 @@
     background: linear-gradient(180deg, #3a7bd5 0%, #6fb1e8 38%, #9fd88f 72%, #6cc06c 100%);
   }
 
-  /* Clock and shortcut labels sit directly on the wallpaper in both themes,
-     so they stay light/outlined rather than following the dark XP text color */
+  /* Clock, date, and shortcut labels sit directly on the wallpaper in both
+     themes, so they stay light/outlined rather than following the dark XP text color */
   body.theme-xp .clock,
+  body.theme-xp .date-display,
   body.theme-xp .shortcut .label{
     color: #ffffff;
     text-shadow: 1px 1px 0 rgba(0,0,0,0.55), 0 0 3px rgba(0,0,0,0.5);
@@ -1464,7 +1493,10 @@
 <body>
 
   <div class="container">
-    <div class="clock" id="clock"></div>
+    <div class="clock-group" id="clockGroup">
+      <div class="clock" id="clock"></div>
+      <div class="date-display" id="dateDisplay"></div>
+    </div>
 
     <form class="search-bar" id="searchForm">
       <div class="search-engine-badge" id="searchEngineBadge">
@@ -1514,11 +1546,6 @@
             <span class="st-icon">🖼️</span>
             <span class="st-label">Background</span>
           </button>
-          <button class="settings-tile" data-target="loc">
-            <span class="st-icon">📍</span>
-            <span class="st-label">Location</span>
-            <span class="st-sub" id="settingsLocationValue"></span>
-          </button>
           <button class="settings-tile" data-target="search">
             <span class="st-icon">🔎</span>
             <span class="st-label">Search Engine</span>
@@ -1531,6 +1558,7 @@
           <button class="settings-tile" data-target="weather">
             <span class="st-icon">🌤️</span>
             <span class="st-label">Weather</span>
+            <span class="st-sub" id="settingsLocationValue"></span>
           </button>
           <button class="settings-tile" data-target="density">
             <span class="st-icon">⚏</span>
@@ -1557,12 +1585,35 @@
         <h3 class="settings-detail-title" id="settingsDetailTitle"></h3>
 
         <div class="settings-detail-section" id="detail-bg">
-          <button class="se-action" id="changeBgBtn">🖼️ Upload image</button>
-          <button class="se-action" id="resetBgBtn">↺ Reset to default</button>
-        </div>
+          <div class="se-segmented" id="bgModeSegmented">
+            <button data-value="image">Photo</button>
+            <button data-value="solid">Solid</button>
+            <button data-value="gradient">Gradient</button>
+          </div>
 
-        <div class="settings-detail-section" id="detail-loc">
-          <div id="expand-loc-inner"><!-- populated dynamically --></div>
+          <div id="bgModeImage">
+            <button class="se-action" id="changeBgBtn">🖼️ Upload image</button>
+          </div>
+
+          <div id="bgModeSolid" style="display:none;">
+            <div class="se-toggle-row">
+              <span class="se-toggle-label">Color</span>
+              <input type="color" class="se-color-input" id="bgSolidColor" value="#1e2140">
+            </div>
+          </div>
+
+          <div id="bgModeGradient" style="display:none;">
+            <div class="se-toggle-row">
+              <span class="se-toggle-label">From</span>
+              <input type="color" class="se-color-input" id="bgGradientFrom" value="#1e2140">
+            </div>
+            <div class="se-toggle-row">
+              <span class="se-toggle-label">To</span>
+              <input type="color" class="se-color-input" id="bgGradientTo" value="#1a3a4a">
+            </div>
+          </div>
+
+          <button class="se-action" id="resetBgBtn">↺ Reset to default</button>
         </div>
 
         <div class="settings-detail-section" id="detail-search">
@@ -1611,6 +1662,8 @@
             <button data-value="celsius">°C</button>
             <button data-value="fahrenheit">°F</button>
           </div>
+          <div class="se-subtle-label">Location</div>
+          <div id="expand-loc-inner"><!-- populated dynamically --></div>
         </div>
 
         <div class="settings-detail-section" id="detail-density">
@@ -1889,20 +1942,87 @@
   const resetBgBtn = document.getElementById('resetBgBtn');
   const bgFileInput = document.getElementById('bgFileInput');
 
-  function applyBackground(dataUrl){
-    if(dataUrl){
-      document.body.style.backgroundImage = `url("${dataUrl}")`;
+  const BG_MODE_KEY = 'startpage_bg_mode';
+  const BG_SOLID_KEY = 'startpage_bg_solid';
+  const BG_GRADIENT_FROM_KEY = 'startpage_bg_gradient_from';
+  const BG_GRADIENT_TO_KEY = 'startpage_bg_gradient_to';
+
+  function getBgMode(){
+    return localStorage.getItem(BG_MODE_KEY) || 'image';
+  }
+
+  function applyBackgroundFromState(){
+    // Clear any previously-applied inline background so we start clean
+    // (a shorthand "background" assignment resets image/size/position/etc.)
+    document.body.style.background = '';
+    document.body.style.backgroundImage = '';
+
+    const mode = getBgMode();
+
+    if(mode === 'solid'){
+      const color = localStorage.getItem(BG_SOLID_KEY) || '#1e2140';
+      document.body.style.background = color;
+    } else if(mode === 'gradient'){
+      const from = localStorage.getItem(BG_GRADIENT_FROM_KEY) || '#1e2140';
+      const to = localStorage.getItem(BG_GRADIENT_TO_KEY) || '#1a3a4a';
+      document.body.style.background = `linear-gradient(135deg, ${from} 0%, ${to} 100%)`;
     } else {
-      document.body.style.backgroundImage = '';
+      const dataUrl = localStorage.getItem(BG_KEY);
+      if(dataUrl){
+        document.body.style.backgroundImage = `url("${dataUrl}")`;
+      }
+      // otherwise the CSS class's default gradient shows through
     }
   }
 
   function loadBackground(){
     try{
-      const stored = localStorage.getItem(BG_KEY);
-      if(stored) applyBackground(stored);
+      applyBackgroundFromState();
     }catch(e){ /* storage may be unavailable or full */ }
   }
+
+  function updateBgModeUI(){
+    const mode = getBgMode();
+    document.getElementById('bgModeImage').style.display = mode === 'image' ? 'block' : 'none';
+    document.getElementById('bgModeSolid').style.display = mode === 'solid' ? 'block' : 'none';
+    document.getElementById('bgModeGradient').style.display = mode === 'gradient' ? 'block' : 'none';
+    document.querySelectorAll('#bgModeSegmented button').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === mode);
+    });
+  }
+
+  document.querySelectorAll('#bgModeSegmented button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      localStorage.setItem(BG_MODE_KEY, btn.dataset.value);
+      updateBgModeUI();
+      applyBackgroundFromState();
+    });
+  });
+
+  const bgSolidColor = document.getElementById('bgSolidColor');
+  const bgGradientFrom = document.getElementById('bgGradientFrom');
+  const bgGradientTo = document.getElementById('bgGradientTo');
+
+  bgSolidColor.value = localStorage.getItem(BG_SOLID_KEY) || '#1e2140';
+  bgGradientFrom.value = localStorage.getItem(BG_GRADIENT_FROM_KEY) || '#1e2140';
+  bgGradientTo.value = localStorage.getItem(BG_GRADIENT_TO_KEY) || '#1a3a4a';
+
+  bgSolidColor.addEventListener('input', () => {
+    localStorage.setItem(BG_SOLID_KEY, bgSolidColor.value);
+    applyBackgroundFromState();
+  });
+
+  bgGradientFrom.addEventListener('input', () => {
+    localStorage.setItem(BG_GRADIENT_FROM_KEY, bgGradientFrom.value);
+    applyBackgroundFromState();
+  });
+
+  bgGradientTo.addEventListener('input', () => {
+    localStorage.setItem(BG_GRADIENT_TO_KEY, bgGradientTo.value);
+    applyBackgroundFromState();
+  });
+
+  updateBgModeUI();
 
   changeBgBtn.addEventListener('click', function(){
     bgFileInput.click();
@@ -1914,11 +2034,15 @@
     const reader = new FileReader();
     reader.onload = function(e){
       const dataUrl = e.target.result;
-      applyBackground(dataUrl);
       try{
         localStorage.setItem(BG_KEY, dataUrl);
+        localStorage.setItem(BG_MODE_KEY, 'image');
+        updateBgModeUI();
+        applyBackgroundFromState();
       }catch(err){
         alert('Image saved for this session, but it was too large to store permanently. Try a smaller image if you want it to persist after closing the browser.');
+        document.body.style.background = '';
+        document.body.style.backgroundImage = `url("${dataUrl}")`;
       }
     };
     reader.readAsDataURL(file);
@@ -1926,7 +2050,15 @@
 
   resetBgBtn.addEventListener('click', function(){
     localStorage.removeItem(BG_KEY);
-    applyBackground(null);
+    localStorage.removeItem(BG_MODE_KEY);
+    localStorage.removeItem(BG_SOLID_KEY);
+    localStorage.removeItem(BG_GRADIENT_FROM_KEY);
+    localStorage.removeItem(BG_GRADIENT_TO_KEY);
+    bgSolidColor.value = '#1e2140';
+    bgGradientFrom.value = '#1e2140';
+    bgGradientTo.value = '#1a3a4a';
+    updateBgModeUI();
+    applyBackgroundFromState();
   });
 
   // ---------- Clock ----------
@@ -1957,8 +2089,12 @@
     return localStorage.getItem(CLOCK_BOLD_KEY) === 'true';
   }
 
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
   function updateClock(){
     const el = document.getElementById('clock');
+    const groupEl = document.getElementById('clockGroup');
+    const dateEl = document.getElementById('dateDisplay');
     const now = new Date();
     let h = now.getHours();
     const m = now.getMinutes().toString().padStart(2, '0');
@@ -1972,15 +2108,20 @@
       el.textContent = `${h.toString().padStart(2,'0')}:${m}`;
     }
 
-    el.classList.toggle('hidden-el', !getShowClock());
+    const dd = now.getDate().toString().padStart(2, '0');
+    const mo = (now.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = now.getFullYear();
+    dateEl.textContent = `${DAY_NAMES[now.getDay()]} ${dd}.${mo}.${yyyy}`;
+
+    groupEl.classList.toggle('hidden-el', !getShowClock());
 
     el.classList.remove('clock-size-small', 'clock-size-medium', 'clock-size-large');
     el.classList.add('clock-size-' + getClockSize());
 
-    el.classList.remove('clock-pos-top', 'clock-pos-bottom');
+    groupEl.classList.remove('clock-pos-top', 'clock-pos-bottom');
     const pos = getClockPosition();
-    if(pos === 'top') el.classList.add('clock-pos-top');
-    if(pos === 'bottom') el.classList.add('clock-pos-bottom');
+    if(pos === 'top') groupEl.classList.add('clock-pos-top');
+    if(pos === 'bottom') groupEl.classList.add('clock-pos-bottom');
 
     el.classList.toggle('clock-bold', getClockBold());
   }
@@ -2788,7 +2929,6 @@
 
   const SETTINGS_TITLES = {
     bg: 'Background',
-    loc: 'Location',
     search: 'Search Engine',
     clock: 'Clock',
     weather: 'Weather',
@@ -2846,7 +2986,7 @@
     const section = document.getElementById('detail-' + target);
     if(section) section.classList.add('active');
 
-    if(target === 'loc') renderLocationRowContent();
+    if(target === 'weather') renderLocationRowContent();
   }
 
   settingsBtn.addEventListener('click', openSettingsModal);
